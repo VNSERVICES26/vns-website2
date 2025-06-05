@@ -59,6 +59,7 @@ async function loadTokenInfo() {
     document.getElementById('vnstContract').textContent = '0xF9Bbb00436B384b57A52D1DfeA8Ca43fC7F11527';
   } catch (error) {
     console.error('Error loading token info:', error);
+    showMessage('Error loading token information', 'error');
   }
 }
 
@@ -86,7 +87,7 @@ async function connectWallet(walletType) {
   try {
     // Check if Web3 is injected
     if (typeof window.ethereum === 'undefined') {
-      alert('Please install MetaMask or another Web3 wallet');
+      showMessage('Please install MetaMask or another Web3 wallet', 'error');
       return;
     }
 
@@ -101,7 +102,7 @@ async function connectWallet(walletType) {
     
     // Enable buttons
     document.getElementById('approveBtn').disabled = false;
-    document.getElementById('buyBtn').disabled = false;
+    document.getElementById('buyBtn').disabled = true;
     
     // Listen for account changes
     window.ethereum.on('accountsChanged', (accounts) => {
@@ -224,40 +225,4 @@ function showMessage(message, type) {
   setTimeout(() => {
     messageElement.remove();
   }, 5000);
-}
-
-// GitHub Swap Integration
-function initGitHubSwap() {
-  // This would be replaced with your actual GitHub swap integration
-  console.log('GitHub swap initialized');
-  
-  // Example of how you might integrate it:
-  document.getElementById('githubSwapBtn')?.addEventListener('click', function() {
-    // Instead of redirecting, we'll embed the functionality
-    showMessage('GitHub swap functionality will be executed here', 'status');
-    
-    // Your actual swap logic from the GitHub repo would go here
-    // For now, we'll simulate it
-    simulateGitHubSwap();
-  });
-}
-
-function simulateGitHubSwap() {
-  // This simulates the swap process from your GitHub repo
-  showMessage('Connecting to VNST swap...', 'status');
-  
-  setTimeout(() => {
-    showMessage('Swap interface ready', 'success');
-    
-    // Here you would actually embed your swap interface
-    // For example:
-    // const swapContainer = document.getElementById('swapContainer');
-    // swapContainer.innerHTML = '<your swap interface HTML>';
-    // Then initialize your swap functionality
-  }, 1500);
-}
-
-// Initialize GitHub swap if on the right page
-if (document.getElementById('githubSwapBtn')) {
-  initGitHubSwap();
 }
