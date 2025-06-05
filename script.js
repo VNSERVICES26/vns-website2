@@ -14,9 +14,9 @@ document.addEventListener('DOMContentLoaded', function() {
   // Initialize animations
   animateElements();
   
-  // Initialize wallet connection if on buy tokens page
+  // Initialize swap functionality if on buy tokens page
   if (document.getElementById('connectWalletBtn')) {
-    initWalletConnection();
+    initSwapInterface();
   }
 });
 
@@ -38,8 +38,31 @@ function animateElements() {
   });
 }
 
-// Wallet Connection Functions
-function initWalletConnection() {
+// Swap Interface Functions
+async function initSwapInterface() {
+  // Load token info
+  await loadTokenInfo();
+  
+  // Setup wallet connection
+  setupWalletConnection();
+  
+  // Setup form interactions
+  setupFormInteractions();
+}
+
+async function loadTokenInfo() {
+  try {
+    // Token details
+    document.getElementById('vnstPrice').textContent = '0.09 USDT';
+    document.getElementById('availableVNST').textContent = '992,007.70 VNST';
+    document.getElementById('minBuyAmount').textContent = '100 VNST';
+    document.getElementById('vnstContract').textContent = '0xF9Bbb00436B384b57A52D1DfeA8Ca43fC7F11527';
+  } catch (error) {
+    console.error('Error loading token info:', error);
+  }
+}
+
+function setupWalletConnection() {
   const connectBtn = document.getElementById('connectWalletBtn');
   const walletOptions = document.getElementById('walletOptions');
   
@@ -57,25 +80,8 @@ function initWalletConnection() {
       connectWallet(walletType);
     });
   });
-  
-  // VNST amount calculation
-  const vnstAmountInput = document.getElementById('vnstAmount');
-  if (vnstAmountInput) {
-    vnstAmountInput.addEventListener('input', function() {
-      const vnstAmount = parseFloat(this.value) || 0;
-      const usdtAmount = vnstAmount * 0.09; // 0.09 USDT per VNST
-      document.getElementById('usdtAmount').textContent = usdtAmount.toFixed(2);
-    });
-  }
-  
-  // Copy contract address
-  const copyBtn = document.querySelector('.copy-btn');
-  if (copyBtn) {
-    copyBtn.addEventListener('click', copyContractAddress);
-  }
 }
 
-// Connect to wallet
 async function connectWallet(walletType) {
   try {
     // Check if Web3 is injected
@@ -110,55 +116,148 @@ async function connectWallet(walletType) {
       }
     });
     
-    alert(`Successfully connected with ${walletType}!`);
+    showMessage(`Successfully connected with ${walletType}!`, 'success');
   } catch (error) {
     console.error('Wallet connection error:', error);
-    alert('Failed to connect wallet: ' + error.message);
+    showMessage('Failed to connect wallet: ' + error.message, 'error');
   }
 }
 
-// Copy contract address
+function setupFormInteractions() {
+  // VNST amount calculation
+  const vnstAmountInput = document.getElementById('vnstAmount');
+  if (vnstAmountInput) {
+    vnstAmountInput.addEventListener('input', function() {
+      const vnstAmount = parseFloat(this.value) || 0;
+      const usdtAmount = vnstAmount * 0.09; // 0.09 USDT per VNST
+      document.getElementById('usdtAmount').textContent = usdtAmount.toFixed(2);
+      
+      // Validate minimum amount
+      if (vnstAmount >= 100) {
+        document.getElementById('approveBtn').disabled = false;
+      } else {
+        document.getElementById('approveBtn').disabled = true;
+        document.getElementById('buyBtn').disabled = true;
+      }
+    });
+  }
+  
+  // Copy contract address
+  const copyBtn = document.querySelector('.copy-btn');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', copyContractAddress);
+  }
+  
+  // Approve USDT button
+  document.getElementById('approveBtn')?.addEventListener('click', async function() {
+    const vnstAmount = parseFloat(document.getElementById('vnstAmount').value);
+    if (!vnstAmount || vnstAmount < 100) {
+      showMessage('Please enter a valid amount (minimum 100 VNST)', 'error');
+      return;
+    }
+    
+    try {
+      showMessage('Approving USDT...', 'status');
+      
+      // Simulate approval (replace with actual contract call)
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      document.getElementById('approveBtn').disabled = true;
+      document.getElementById('buyBtn').disabled = false;
+      showMessage('USDT approved successfully!', 'success');
+    } catch (error) {
+      showMessage('Approval failed: ' + error.message, 'error');
+    }
+  });
+  
+  // Buy VNST button
+  document.getElementById('buyBtn')?.addEventListener('click', async function() {
+    const vnstAmount = parseFloat(document.getElementById('vnstAmount').value);
+    if (!vnstAmount || vnstAmount < 100) {
+      showMessage('Please enter a valid amount (minimum 100 VNST)', 'error');
+      return;
+    }
+    
+    if (!document.getElementById('walletAddress').textContent) {
+      showMessage('Please connect your wallet first', 'error');
+      return;
+    }
+    
+    try {
+      showMessage('Processing VNST purchase...', 'status');
+      
+      // Simulate purchase (replace with actual contract call)
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      showMessage(`Successfully purchased ${vnstAmount} VNST tokens!`, 'success');
+    } catch (error) {
+      showMessage('Purchase failed: ' + error.message, 'error');
+    }
+  });
+}
+
 function copyContractAddress() {
   const contractAddress = '0xF9Bbb00436B384b57A52D1DfeA8Ca43fC7F11527';
   navigator.clipboard.writeText(contractAddress)
     .then(() => {
       const copyBtn = document.querySelector('.copy-btn');
-      copyBtn.textContent = 'Copied!';
+      copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
       setTimeout(() => {
-        copyBtn.textContent = 'Copy Address';
+        copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy Address';
       }, 2000);
     })
-    .catch(err => console.error('Failed to copy: ', err));
+    .catch(err => {
+      console.error('Failed to copy: ', err);
+      showMessage('Failed to copy address', 'error');
+    });
 }
 
-// Buy VNST functionality
-document.getElementById('approveBtn')?.addEventListener('click', function() {
-  const vnstAmount = parseFloat(document.getElementById('vnstAmount').value);
-  if (!vnstAmount || vnstAmount < 100) {
-    alert('Please enter a valid amount (minimum 100 VNST)');
-    return;
-  }
+function showMessage(message, type) {
+  const statusDiv = document.getElementById('statusMessages');
+  if (!statusDiv) return;
   
-  alert('USDT approval transaction initiated. Please confirm in your wallet.');
-});
+  const messageElement = document.createElement('div');
+  messageElement.textContent = message;
+  messageElement.classList.add('message', `${type}-message`);
+  statusDiv.appendChild(messageElement);
+  
+  setTimeout(() => {
+    messageElement.remove();
+  }, 5000);
+}
 
-document.getElementById('buyBtn')?.addEventListener('click', function() {
-  const vnstAmount = parseFloat(document.getElementById('vnstAmount').value);
-  if (!vnstAmount || vnstAmount < 100) {
-    alert('Please enter a valid amount (minimum 100 VNST)');
-    return;
-  }
+// GitHub Swap Integration
+function initGitHubSwap() {
+  // This would be replaced with your actual GitHub swap integration
+  console.log('GitHub swap initialized');
   
-  if (!document.getElementById('walletAddress').textContent) {
-    alert('Please connect your wallet first');
-    return;
-  }
-  
-  alert(`Buying ${vnstAmount} VNST tokens. Please confirm the transaction in your wallet.`);
-});
+  // Example of how you might integrate it:
+  document.getElementById('githubSwapBtn')?.addEventListener('click', function() {
+    // Instead of redirecting, we'll embed the functionality
+    showMessage('GitHub swap functionality will be executed here', 'status');
+    
+    // Your actual swap logic from the GitHub repo would go here
+    // For now, we'll simulate it
+    simulateGitHubSwap();
+  });
+}
 
-// GitHub swap integration
-document.getElementById('githubSwapBtn')?.addEventListener('click', function() {
-  // This would be replaced with actual GitHub swap integration
-  alert('Connecting to GitHub swap repository...');
-});
+function simulateGitHubSwap() {
+  // This simulates the swap process from your GitHub repo
+  showMessage('Connecting to VNST swap...', 'status');
+  
+  setTimeout(() => {
+    showMessage('Swap interface ready', 'success');
+    
+    // Here you would actually embed your swap interface
+    // For example:
+    // const swapContainer = document.getElementById('swapContainer');
+    // swapContainer.innerHTML = '<your swap interface HTML>';
+    // Then initialize your swap functionality
+  }, 1500);
+}
+
+// Initialize GitHub swap if on the right page
+if (document.getElementById('githubSwapBtn')) {
+  initGitHubSwap();
+}
